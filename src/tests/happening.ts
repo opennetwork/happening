@@ -1,4 +1,11 @@
-import {addHappening, addHappeningTree, getHappeningTree, getTopHappeningTree} from "../data";
+import {
+    addHappening,
+    addHappeningTree,
+    deleteHappeningTree,
+    getHappening,
+    getHappeningTree,
+    getTopHappeningTree
+} from "../data";
 import {ok} from "../is";
 
 {
@@ -38,5 +45,13 @@ import {ok} from "../is";
         ok(top.children[1].children.length === 0);
         ok(top.children[2].children.length === 2);
     }
+
+    ok(await getHappening(tree.happeningId));
+    ok(await getHappening(tree.children[2].children[0].happeningId));
+
+    await deleteHappeningTree(tree.happeningId);
+
+    ok(!await getHappening(tree.happeningId));
+    ok(!await getHappening(tree.children[2].children[0].happeningId));
 
 }

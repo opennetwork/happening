@@ -41,6 +41,8 @@ export interface Expiring {
     expiresAt?: string;
 }
 
+export type HappeningType = "event" | "appointment" | "poll";
+
 export interface HappeningTreeData extends HappeningEventData {
     children?: HappeningTreeData[]
 }
@@ -49,6 +51,7 @@ export interface HappeningEventData {
     startedAt?: string
     endedAt?: string
     createdAt?: string
+    type?: HappeningType | string
 }
 
 export interface HappeningData extends HappeningEventData {
@@ -57,13 +60,15 @@ export interface HappeningData extends HappeningEventData {
 }
 
 export interface Happening extends HappeningData {
-    happeningId: string
+    happeningId: string;
+    type: HappeningType | string;
 }
 
 export type PartialHappening = HappeningData & Partial<Happening>
 
 export interface HappeningTree extends HappeningEventData {
     happeningId: string;
+    type: HappeningType | string;
     parent?: HappeningTree;
     children: HappeningTree[];
 }
