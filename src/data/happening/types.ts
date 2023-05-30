@@ -1,4 +1,5 @@
 import {Attendee, AttendeeData} from "../attendee";
+import {Partner} from "../partner";
 
 export type HappeningType = "event" | "appointment" | "poll" | "payment" | "bill" | "";
 
@@ -25,6 +26,7 @@ export interface HappeningData extends HappeningEventData {
 export interface Happening extends HappeningData {
     happeningId: string;
     type: HappeningType | string;
+    partnerId?: string;
 }
 
 export type PartialHappening = HappeningData & Partial<Happening>
@@ -35,4 +37,6 @@ export interface HappeningTree extends HappeningEventData {
     parent?: HappeningTree;
     children: HappeningTree[];
     attendees: Attendee[];
+    partnerId?: string;
+    partner?: Partner;
 }

@@ -2,11 +2,13 @@ import {Happening, HappeningTree} from "./types";
 import {getHappening} from "./get-happening";
 import {ok} from "../../is";
 import {Attendee, getAttendee} from "../attendee";
+import {getPartner, Partner} from "../partner";
 
 interface GetHappeningTreeContext {
     trees: Map<string, HappeningTree>;
     store?: Map<string, Happening>;
     attendees: Map<string, Attendee>;
+    partners: Map<string, Partner>;
 }
 
 export function createGetHappeningTreeContext(happenings?: Happening[], attendees?: Attendee[]): GetHappeningTreeContext {
@@ -18,6 +20,7 @@ export function createGetHappeningTreeContext(happenings?: Happening[], attendee
         attendees: attendees ?
             new Map(attendees.map(value => [value.attendeeId, value])) :
             new Map(),
+        partners: new Map()
     };
 }
 
@@ -56,6 +59,10 @@ export async function getHappeningTree(happeningId: string, context = createGetH
         children: [],
         attendees: []
     };
+
+    if (data.partnerId) {
+        instance.partner = await getCachedPartner(data.partnerId);
+    }
 
     // Put the instance in the memory cache so
     // it's object reference is used when
@@ -98,6 +105,15 @@ export async function getHappeningTree(happeningId: string, context = createGetH
         const value = await getAttendee(attendeeId);
         ok(value, `Expected to find attendee ${attendeeId}`);
         context.attendees.set(attendeeId, value);
+        return value;
+    }
+
+    async function getCachedPartner(partnerId: string) {
+        const existing = context.partners.get(partnerId);
+        if (existing) return existing;
+        const value = await getPartner(partnerId);
+        ok(value, `Expected to find partner ${partnerId}`);
+        context.partners.set(partnerId, value);
         return value;
     }
 }
