@@ -37,13 +37,27 @@ export interface Client {
     background(query: Record<string, string> | URLSearchParams): Promise<void>;
 }
 
+export interface AttendeeData {
+    reference: string;
+    name?: string;
+    email?: string;
+}
+
+export interface Attendee extends AttendeeData {
+    attendeeId: string;
+    createdAt: string;
+}
+
+export type PartialAttendee = AttendeeData & Partial<Attendee>;
+
 export interface Expiring {
     expiresAt?: string;
 }
 
-export type HappeningType = "event" | "appointment" | "poll";
+export type HappeningType = "event" | "appointment" | "poll" | "payment" | "bill" | "";
 
 export interface HappeningTreeData extends HappeningEventData {
+    attendees?: (string | AttendeeData)[]
     children?: HappeningTreeData[]
 }
 
@@ -51,12 +65,15 @@ export interface HappeningEventData {
     startedAt?: string
     endedAt?: string
     createdAt?: string
-    type?: HappeningType | string
+    type?: HappeningType | string;
+    reference?: string;
+    url?: string;
 }
 
 export interface HappeningData extends HappeningEventData {
     parent?: string
-    children?: string[]
+    children?: string[];
+    attendees?: string[];
 }
 
 export interface Happening extends HappeningData {
@@ -71,6 +88,7 @@ export interface HappeningTree extends HappeningEventData {
     type: HappeningType | string;
     parent?: HappeningTree;
     children: HappeningTree[];
+    attendees: Attendee[];
 }
 
 export interface PartnerData extends Record<string, unknown> {

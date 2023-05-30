@@ -7,17 +7,28 @@ import {
     getTopHappeningTree
 } from "../data";
 import {ok} from "../is";
+import {v4} from "uuid";
 
 {
 
+    const a1 = v4();
+    const a2 = v4();
+    const a3 = v4();
+
     const tree = await addHappeningTree({
+        attendees: [a1],
         children: [
             {},
             {},
             {
                 children: [
                     {},
-                    {}
+                    {
+                        attendees: [
+                            { reference: a2 },
+                            { reference: a3 }
+                        ]
+                    }
                 ]
             }
         ]
@@ -45,6 +56,8 @@ import {ok} from "../is";
         ok(top.children[1].children.length === 0);
         ok(top.children[2].children.length === 2);
     }
+
+    console.log(tree);
 
     ok(await getHappening(tree.happeningId));
     ok(await getHappening(tree.children[2].children[0].happeningId));

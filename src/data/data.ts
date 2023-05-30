@@ -5,3 +5,4 @@ export * from "./background";
 export * from "./lock";
 export * from "./authentication-state";
 export * from "./happening";
+export * from "./attendee";
