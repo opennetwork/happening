@@ -6,3 +6,5 @@ export * from "./lock";
 export * from "./authentication-state";
 export * from "./happening";
 export * from "./attendee";
+export * from "./authorisation";
+export * from "./authorisation-notification";

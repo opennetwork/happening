@@ -50,6 +50,43 @@ export interface Attendee extends AttendeeData {
 
 export type PartialAttendee = AttendeeData & Partial<Attendee>;
 
+export type AttendeeAuthorisationType = "attendee";
+export type HappeningAuthorisationType = "happening";
+
+export type AuthorisationType = AttendeeAuthorisationType | HappeningAuthorisationType;
+
+export interface AuthorisationData {
+    type: AuthorisationType;
+    attendeeId?: string;
+    happeningId?: string;
+    notifications?: AuthorisationNotificationData[];
+}
+
+export interface Authorisation extends AuthorisationData {
+    authorisationId: string;
+    createdAt: string;
+    updatedAt: string;
+    notifiedAt?: string;
+    declinedAt?: string;
+    authorisedAt?: string;
+}
+
+export type AuthorisationNotificationType = (
+    | "payment"
+    | "message"
+);
+
+export interface AuthorisationNotificationData extends Record<string, unknown> {
+    type: AuthorisationNotificationType;
+}
+
+export interface AuthorisationNotification extends AuthorisationNotificationData {
+    notificationId: string;
+    authorisationId: string;
+    createdAt: string;
+    stateId?: string;
+}
+
 export interface Expiring {
     expiresAt?: string;
 }
