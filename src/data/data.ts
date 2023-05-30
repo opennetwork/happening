@@ -4,3 +4,4 @@ export * from "./access-token";
 export * from "./background";
 export * from "./lock";
 export * from "./authentication-state";
+export * from "./happening";

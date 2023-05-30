@@ -18,7 +18,10 @@ try {
       span.end();
     })
 
-    // TODO add tests
+    await tracer.startActiveSpan("happening-tests", async (span) => {
+      await import("./happening");
+      span.end();
+    })
 
     span.end();
   })
