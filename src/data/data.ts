@@ -8,3 +8,4 @@ export * from "./happening";
 export * from "./attendee";
 export * from "./authorisation";
 export * from "./authorisation-notification";
+export * from "./storage";

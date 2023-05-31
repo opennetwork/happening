@@ -1,6 +1,6 @@
 import {KeyValueStore} from "./types";
 import {getKeyValueStore} from "./kv";
-import {connectGlobalRedisClient, getRedisPrefixedKey, isRedis} from "./redis-client";
+import {connectGlobalRedisClient, getRedisPrefixedKey, isRedis} from "./storage/redis-client";
 import {Expiring} from "./expiring";
 
 // Added to only where redis is not in use

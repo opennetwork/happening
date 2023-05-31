@@ -1,20 +1,41 @@
 import {Attendee, AttendeeData} from "../attendee";
 import {Partner} from "../partner";
 
-export type HappeningType = "event" | "appointment" | "poll" | "payment" | "bill" | "";
+export type HappeningType = (
+    | "event"
+    | "ticket"
+    | "appointment"
+    | "poll"
+    | "payment"
+    | "bill"
+    | "activity"
+    | "report"
+    | "availability"
+    | "intent"
+    | "swap"
+);
 
 export interface HappeningTreeData extends HappeningEventData {
     attendees?: (string | AttendeeData)[]
     children?: HappeningTreeData[]
 }
 
-export interface HappeningEventData {
-    startedAt?: string
-    endedAt?: string
+export interface HappeningOptionData extends Record<string, unknown> {
+    type?: HappeningType | string;
+}
+
+export interface HappeningEventData extends Record<string, unknown> {
+    startAt?: string // Intended start time
+    startedAt?: string // Actual start time
+    endAt?: string // Intended end time
+    endedAt?: string // Actual end time
     createdAt?: string
     type?: HappeningType | string;
     reference?: string;
     url?: string;
+    title?: string;
+    description?: string;
+    options?: HappeningOptionData[];
 }
 
 export interface HappeningData extends HappeningEventData {

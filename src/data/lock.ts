@@ -1,4 +1,4 @@
-import {connectGlobalRedisClient, getGlobalRedisClient, isRedis, isRedisMemory} from "./redis-client";
+import {connectGlobalRedisClient, getGlobalRedisClient, isRedis, isRedisMemory} from "./storage/redis-client";
 import createLockClient, {LockFn} from "redis-lock";
 import {UnlockFn} from "redis-lock";
 import {RedisClientType} from "redis";
