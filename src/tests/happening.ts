@@ -64,6 +64,7 @@ import {v4} from "uuid";
 
     await deleteHappeningTree(tree.happeningId);
 
+    console.log(await getHappening(tree.happeningId));
     ok(!await getHappening(tree.happeningId));
     ok(!await getHappening(tree.children[2].children[0].happeningId));
 

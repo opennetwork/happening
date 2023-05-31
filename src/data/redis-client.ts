@@ -114,12 +114,12 @@ export function createRedisKeyValueStore<T>(name: string): KeyValueStore<T> {
 
     async function deleteFn(key: string): Promise<void> {
         await connect();
-        await client.del(key);
+        await client.del(getKey(key));
     }
 
     async function has(key: string): Promise<boolean> {
         await connect();
-        return client.exists(key);
+        return client.exists(getKey(key));
     }
 
     async function keys(): Promise<string[]> {
