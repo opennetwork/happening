@@ -229,8 +229,8 @@ function group(...happenings: Happening[]): Pick<Happening, "attendees" | "child
     // After a swap, person 2 will be able to create their happening with the
     // happening that person 1 intended to swap
     const swap = await addHappening({
+        ...group(person2Availability, person1Intention),
         type: "swap",
-        ...group(person2Availability, person1Intention)
     });
 
     // Person 2 receives an appointment for the time person 1 indicated
