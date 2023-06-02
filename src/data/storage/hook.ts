@@ -2,7 +2,8 @@ import {KeyValueStore, KeyValueStoreOptions} from "./types";
 import {isPromise, ok} from "../../is";
 import {getKeyValueStore} from "./kv";
 
-export const STORAGE_CONSTRUCT = "construct" as const;
+export type UnknownFn = (...args: unknown[]) => unknown;
+
 
 export const STORAGE_HOOK_ON_FUNCTION: StorageHookOnFunction[] = [
     "clear",
@@ -16,8 +17,8 @@ export const STORAGE_HOOK_ON_FUNCTION: StorageHookOnFunction[] = [
 ];
 const STRING_FUNCTIONS: string[] = STORAGE_HOOK_ON_FUNCTION;
 
-function isStorageHookOnFunction(key: string): key is StorageHookOnFunction {
-    return STRING_FUNCTIONS.includes(key);
+export function isStorageHookOnFunction(key: unknown): key is StorageHookOnFunction {
+    return typeof key === "string" && STRING_FUNCTIONS.includes(key);
 }
 
 // export const STORAGE_HOOK_ON: StorageHookOn[] = [
@@ -26,7 +27,6 @@ function isStorageHookOnFunction(key: string): key is StorageHookOnFunction {
 // ];
 
 export type StorageHookOn = (
-    | typeof STORAGE_CONSTRUCT
     | StorageHookOnFunction
 );
 
@@ -50,45 +50,47 @@ export type StorageHookStage = (
     | typeof STORAGE_HOOK_AFTER
 );
 
-export type StorageHookValue<O extends StorageHookOnFunction, T> = Awaited<ReturnType<KeyValueStore<T>[O]>> | undefined | void;
-export type StorageHookReturnValue<O extends StorageHookOnFunction, T> =  StorageHookValue<O, T> | Promise<StorageHookValue<O, T>>;
+export type StorageHookValue<T, O extends StorageHookOnFunction, R = ReturnType<KeyValueStore<T>[O]>> = (R extends Promise<infer Z> ? Z : R) | undefined;
+export type StorageHookReturnValue<T, O extends StorageHookOnFunction> =  StorageHookValue<T, O> | Promise<StorageHookValue<T, O>>;
 
-export interface StorageHook<O extends StorageHookOn = StorageHookOn, T = unknown> {
+export interface StorageHook<T = unknown, O extends StorageHookOn = StorageHookOn> {
     on: O;
     stage?: StorageHookStage;
-    handler: O extends typeof STORAGE_CONSTRUCT ?
-        StorageHookConstructFn<T> :
-        O extends StorageHookOnFunction ?
-            StorageHookFn<O, T> : never;
+    handler: StorageHookFn<T, O>;
 }
 
-export interface StorageHookFn<O extends StorageHookOnFunction = StorageHookOnFunction, T = unknown> {
-    (...args: [...Parameters<KeyValueStore<T>[O]>, StorageHookValue<O, T>]): StorageHookReturnValue<O, T>
-}
+export type StorageHookFn<T = unknown, O extends StorageHookOnFunction = StorageHookOnFunction> = (...args: [...Parameters<KeyValueStore<T>[O]>, StorageHookValue<T, O>]) => StorageHookReturnValue<T, O> | void
+
+// export interface StorageHookFn<T = unknown, O extends StorageHookOnFunction = StorageHookOnFunction> {
+//     (...args: Parameters<KeyValueStore<T>[O]>): StorageHookReturnValue<T, O> | void
+//     (...args: ([...Parameters<KeyValueStore<T>[O]>, StorageHookValue<T, O>])): StorageHookReturnValue<T, O> | void
+//     (...args: unknown[]): StorageHookReturnValue<T, O> | void
+//     (): StorageHookReturnValue<T, O> | void
+// }
 
 export interface StorageHookConstructFn<T = unknown> {
     (store: KeyValueStore<T>): KeyValueStore<T> | undefined | void;
 }
 
 export type StorageHooks<T = unknown> = {
-    [O in StorageHookOn]: StorageHook<O, T>[]
+    [O in StorageHookOn]: StorageHook<T, O>[]
 }
 
 export interface Builder<T = unknown, ST extends KeyValueStore<T> = KeyValueStore<T>> {
-    <O extends StorageHookOn>(hook: StorageHook<O, T>): Builder<T, ST>;
-    (on: typeof STORAGE_CONSTRUCT, fn: StorageHookConstructFn<T>): Builder<T, ST>;
-    <O extends StorageHookOnFunction>(on: O, fn: StorageHookFn<O, T>): Builder<T, ST>;
-    stages: StorageHooks;
+    <O extends StorageHookOnFunction>(on: O, fn: StorageHookFn<T, O>, options?: Omit<StorageHook<T, O>, "handler" | "on">): Builder<T, ST>;
+    <O extends StorageHookOn>(hook: StorageHook<T, O>): Builder<T, ST>;
+    hooks: StorageHooks<T>;
+    build(store: ST): ST;
     build(name: string, options?: KeyValueStoreOptions): ST;
+    use: Builder<T, ST>
 }
 
 export interface BuilderKeyValueStore<T> extends KeyValueStore<T> {
     builder: Builder<T>;
 }
 
-export function builder<T>() {
-    const stages: StorageHooks<T> = {
-        [STORAGE_CONSTRUCT]: [],
+function createHooks<T>(): StorageHooks<T> {
+    return {
         clear: [],
         delete: [],
         get: [],
@@ -97,41 +99,57 @@ export function builder<T>() {
         keys: [],
         set: [],
         values: []
+    };
+}
+
+export function use<T = unknown, O extends StorageHookOn = StorageHookOn>(...hooks: StorageHook<T, O>[]) {
+    const hooked = builder<T>();
+    for (const hook of hooks) {
+        hooked.use(hook);
     }
+    return hooked;
+}
+
+export function builder<T>(hooks = createHooks<T>()) {
     const fn: unknown = builderFn;
     ok<Partial<Builder>>(fn);
-    fn.stages = stages;
+    fn.hooks = hooks;
     fn.build = build;
     ok<Builder<T>>(fn);
+    fn.use = fn;
     const builder: Builder<T> = fn;
     return fn;
 
-    function build(name: string, options?: KeyValueStoreOptions): KeyValueStore<T> {
-        let store: KeyValueStore<T> = getKeyValueStore<T>(name, options);
-        store = buildOn(STORAGE_CONSTRUCT);
+    function build(...args: unknown[]): KeyValueStore<T> {
+        let store: KeyValueStore<T> = getStore();
         for (const on of STORAGE_HOOK_ON_FUNCTION) {
-            store = buildOn(STORAGE_CONSTRUCT);
+            store = buildOn(on);
         }
         return store;
+
+        function getStore(): KeyValueStore<T> {
+            if (args.length === 1) {
+                const [store] = args;
+                ok<KeyValueStore<T>>(store);
+                ok(store.get);
+                ok(store.set);
+                return store;
+            }
+            ok(args.length >= 2);
+            const [name, options] = args;
+            ok(typeof name === "string");
+            ok<KeyValueStoreOptions>(options);
+            return getKeyValueStore<T>(name, options);
+        }
         
         function buildOn<O extends StorageHookOn>(on: O): KeyValueStore<T> {
-            type UnknownFn = (...args: unknown[]) => unknown;
 
             let returningStore = store;
-            if (on === STORAGE_CONSTRUCT) {
-                const hooks = stages[STORAGE_CONSTRUCT];
-                for (const { handler, stage } of hooks) {
-                    ok(stage === STORAGE_HOOK_DEFAULT, `Expected stage to be not given or ${STORAGE_HOOK_DEFAULT} for on ${STORAGE_CONSTRUCT}`);
-                    const returnedValue = handler(returningStore);
-                    if (returnedValue) {
-                        returningStore = returnedValue;
-                    }
-                }
-            } else if (isStorageHookOnFunction(on)) {
-                const hooks: StorageHook<O, T>[] = stages[on];
-                if (!hooks.length) return;
-                const before = hooks.filter(hook => isStage(hook, STORAGE_HOOK_BEFORE));
-                const after = hooks.filter(hook => isStage(hook, STORAGE_HOOK_AFTER));
+            if (isStorageHookOnFunction(on)) {
+                const onHooks: StorageHook<T, O>[] = hooks[on];
+                if (!onHooks.length) return;
+                const before = onHooks.filter(hook => isStage(hook, STORAGE_HOOK_BEFORE));
+                const after = onHooks.filter(hook => isStage(hook, STORAGE_HOOK_AFTER));
 
                 let fn: UnknownFn = store[on];
                 for (const { handler } of before) {
@@ -150,7 +168,7 @@ export function builder<T>() {
                         // Maybe this will actually show up as the name for the call... idk
                         async [name](...args: unknown[]) {
                             const returnedValue = await fn.call(store, ...args);
-                            return handler.call(store, ...args, returnedValue);
+                            return handler.call(store, ...args, returnedValue) ?? returnedValue;
                         }
                     } as const;
                     return namedFn[name];
@@ -185,39 +203,45 @@ export function builder<T>() {
 
     function builderFn(...args: unknown[]): Builder<T> {
         const hook = get();
-        push(stages[hook.on], hook);
+        push(hooks[hook.on], hook);
         return builder;
-        function push<O extends StorageHookOn>(hooks: StorageHook<O, T>[], hook: StorageHook<StorageHookOn, T>) {
+        function push<O extends StorageHookOn>(hooks: StorageHook<T, O>[], hook: StorageHook<T>) {
             ok(hooks);
             const was: unknown = hook;
             assertHook(was);
             hooks.push(was);
 
-            function assertHook(hook: unknown): asserts hook is StorageHook<O, T> {
-                ok<StorageHook<O, T>>(hook);
+            function assertHook(hook: unknown): asserts hook is StorageHook<T, O> {
+                ok<StorageHook<T, O>>(hook);
                 if (hooks.length >= 1) {
                     ok(hook.on === hooks[0].on);
                 }
             }
         }
 
-        function get(): StorageHook<StorageHookOn, T> {
+        function get(): StorageHook<T> {
             if (args.length === 1) {
                 const hook = args[0];
-                ok<StorageHook<StorageHookOn, T>>(hook);
+                ok<StorageHook<T>>(hook);
                 ok(hook.on);
                 ok(hook.handler);
                 return hook;
             }
             ok(args.length >= 2);
-            const [on, handler] = args;
+            const [on, handler, options] = args;
             ok(typeof on === "string");
             ok<StorageHookOn>(on);
-            ok<StorageHookFn<StorageHookOnFunction, T> | StorageHookConstructFn<T>>(handler);
-            return {
+            ok<StorageHookFn<T>>(handler);
+            const hook: StorageHook<T> = {
                 on,
                 handler,
                 stage: STORAGE_HOOK_DEFAULT
+            };
+            if (!options) return hook;
+            ok<Partial<StorageHook<T>>>(options);
+            return {
+                ...hook,
+                ...options
             };
         }
     }
