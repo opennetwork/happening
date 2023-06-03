@@ -41,7 +41,7 @@ export function getGlobalLock(): LockFn | undefined {
   const fn =  async (name: string) => {
     if (!lockFn) {
       const client = await globalRedisClient;
-      const { createLockClient } = await import("redis-lock");
+      const { default: createLockClient } = await import("redis-lock");
       lockFn = lockFn ?? createLockClient(client);
     }
     await connectGlobalRedisClient(globalRedisClient);

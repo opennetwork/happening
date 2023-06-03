@@ -41,7 +41,7 @@ export function getGlobalRedisClient() {
 }
 
 export async function connectGlobalRedisClient(
-  clientPromise: Promise<RedisClientType>
+  clientPromise: Promise<RedisClientType> = getGlobalRedisClient()
 ) {
   const client: RedisClientType = await clientPromise;
   if (client.isOpen) {
@@ -148,12 +148,12 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
 
   async function deleteFn(key: string): Promise<void> {
     const client = await connect();
-    await client.del(key);
+    await client.del(getKey(key));
   }
 
   async function has(key: string): Promise<boolean> {
     const client = await connect();
-    return client.exists(key);
+    return client.exists(getKey(key));
   }
 
   async function keys(): Promise<string[]> {
@@ -218,7 +218,7 @@ export async function stopRedis() {
       //
       // Its okay if we over do this, we will "just" make a new client
       promise.then(
-          client => {
+          (client: RedisClientType) => {
             // If it resolved but it's not set, we made a new promise over the top already
             // so we don't want to reset it
             if (GLOBAL_CLIENTS.get(key) === client) {
