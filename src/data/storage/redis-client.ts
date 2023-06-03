@@ -1,8 +1,9 @@
 import {KeyValueStore, KeyValueStoreOptions, MetaKeyValueStore} from "./types";
-import { createClient, RedisClientType } from "redis";
+import type { RedisClientType } from "redis";
 import { ok } from "../../is";
 
 const GLOBAL_CLIENTS = new Map();
+const GLOBAL_CLIENTS_PROMISE = new Map();
 const GLOBAL_CLIENT_CONNECTION_PROMISE = new WeakMap();
 
 export function isRedis() {
@@ -18,23 +19,31 @@ export function getRedisUrl() {
 }
 
 export function getGlobalRedisClient() {
-  // console.log("getGlobalRedisClient");
   const url = getRedisUrl();
-  const existing = GLOBAL_CLIENTS.get(url);
+  // Give a stable promise result so it can be used to cache on too
+  const existing = GLOBAL_CLIENTS_PROMISE.get(url);
   if (existing) {
     return existing;
   }
-  const client = createClient({
-    url,
-  });
-  client.on("error", console.warn);
-  GLOBAL_CLIENTS.set(url, client);
-  return client;
+  const promise = getClient();
+  GLOBAL_CLIENTS_PROMISE.set(url, promise);
+  return promise;
+
+  async function getClient() {
+    const { createClient } = await import("redis");
+    const client = createClient({
+      url,
+    });
+    client.on("error", console.warn);
+    GLOBAL_CLIENTS.set(url, client);
+    return client;
+  }
 }
 
 export async function connectGlobalRedisClient(
-  client: RedisClientType = getGlobalRedisClient()
+  clientPromise: Promise<RedisClientType>
 ) {
+  const client: RedisClientType = await clientPromise;
   if (client.isOpen) {
     return client;
   }
@@ -65,7 +74,7 @@ export function getRedisPrefixedKey(name: string, key: string, options?: KeyValu
 }
 
 export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStoreOptions): KeyValueStore<T> {
-  const client = getGlobalRedisClient();
+  const clientPromise = getGlobalRedisClient();
 
   const isCounter = name.endsWith("Counter");
 
@@ -99,7 +108,7 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
   }
 
   async function connect() {
-    return connectGlobalRedisClient(client);
+    return connectGlobalRedisClient(clientPromise);
   }
 
   async function get(key: string): Promise<T | undefined> {
@@ -107,7 +116,7 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
   }
 
   async function internalGet(actualKey: string): Promise<T | undefined> {
-    await connect();
+    const client = await connect();
     const value = await client.get(actualKey);
     return parseValue(value);
   }
@@ -116,13 +125,13 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
     if (isCounter) {
       ok(typeof value === "number", "Expected number value for counter store");
     }
-    await connect();
+    const client = await connect();
     const json = JSON.stringify(value);
     await client.set(getKey(key), json);
   }
 
   async function values(): Promise<T[]> {
-    await connect();
+    const client = await connect();
     const keys = await client.keys(`${getPrefix()}*`);
     return await Promise.all(keys.map((key: string) => internalGet(key)));
   }
@@ -138,17 +147,17 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
   }
 
   async function deleteFn(key: string): Promise<void> {
-    await connect();
+    const client = await connect();
     await client.del(key);
   }
 
   async function has(key: string): Promise<boolean> {
-    await connect();
+    const client = await connect();
     return client.exists(key);
   }
 
   async function keys(): Promise<string[]> {
-    await connect();
+    const client = await connect();
     return await client.keys(`${getPrefix()}*`);
   }
 
@@ -163,6 +172,7 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
   }
 
   async function increment(key: string): Promise<number> {
+    const client = await connect();
     ok(isCounter, "Expected increment to be used with a counter store only");
     await connect();
     const returnedValue = await client.incr(getKey(key));
@@ -197,12 +207,35 @@ export function createRedisKeyValueStore<T>(name: string, options?: KeyValueStor
 }
 
 export async function stopRedis() {
-  // console.log("stopRedis", GLOBAL_CLIENTS.size);
-  for (const [key, client] of GLOBAL_CLIENTS.entries()) {
-    GLOBAL_CLIENTS.delete(key);
-    GLOBAL_CLIENT_CONNECTION_PROMISE.delete(client);
-    if (client.isOpen) {
+  for (const [key, promise] of GLOBAL_CLIENTS_PROMISE.entries()) {
+    const client = GLOBAL_CLIENTS.get(key)
+    deleteKey(key);
+    if (client?.isOpen) {
       await client.disconnect();
+    } else {
+      // If we didn't yet set the client, but we have a promise active
+      // reset all the clients again
+      //
+      // Its okay if we over do this, we will "just" make a new client
+      promise.then(
+          client => {
+            // If it resolved but it's not set, we made a new promise over the top already
+            // so we don't want to reset it
+            if (GLOBAL_CLIENTS.get(key) === client) {
+              deleteKey(key);
+            }
+          },
+          () => {
+            // If we got an error, delete either way
+            deleteKey(key);
+          }
+      )
+    }
+
+    function deleteKey(key: string) {
+      GLOBAL_CLIENTS.delete(key);
+      GLOBAL_CLIENTS_PROMISE.delete(key);
+      GLOBAL_CLIENT_CONNECTION_PROMISE.delete(client);
     }
   }
 }

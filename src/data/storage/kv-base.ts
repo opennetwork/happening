@@ -1,7 +1,7 @@
 import { requestContext } from "@fastify/request-context";
 import { KVS, StorageSchema } from "@kvs/types";
 import { kvsEnvStorage } from "@kvs/env";
-import {KeyValueStore, KeyValueStoreOptions, MetaKeyValueStore} from "./types";
+import { KeyValueStore, KeyValueStoreOptions, MetaKeyValueStore } from "./types";
 import { createRedisKeyValueStore, isRedis } from "./redis-client";
 import { ok } from "../../is";
 
