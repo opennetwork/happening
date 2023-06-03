@@ -9,3 +9,8 @@ export * from "./attendee";
 export * from "./authorisation";
 export * from "./authorisation-notification";
 export * from "./storage";
+export * from "./user";
+export * from "./authentication-role";
+export * from "./organisation";
+export * from "./form-meta";
+export * from "./cache";

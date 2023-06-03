@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-import "../../tracing";
+import "../tracing";
 
 import {start} from "./start";
 

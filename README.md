@@ -50,6 +50,20 @@ export interface Attendee extends AttendeeData {
 
 export type PartialAttendee = AttendeeData & Partial<Attendee>;
 
+export type SystemRole = "system";
+
+export type AuthenticationRole =
+  | "moderator"
+  | "admin"
+  | "owner"
+  | "member"
+  | "booster"
+  | "industry"
+  | "developer"
+  | "coordinator"
+  | "partner"
+  | SystemRole;
+
 export type AttendeeAuthorisationType = "attendee";
 export type HappeningAuthorisationType = "happening";
 
@@ -89,6 +103,14 @@ export interface AuthorisationNotification extends AuthorisationNotificationData
 
 export interface Expiring {
     expiresAt?: string;
+}
+
+export interface FormMetaData extends Record<string, unknown> {}
+
+export interface FormMeta extends FormMetaData {
+  formMetaId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type HappeningType = (
@@ -152,26 +174,48 @@ export interface HappeningTree extends HappeningEventData {
     partner?: Partner;
 }
 
-export interface PartnerData extends Record<string, unknown> {
-    partnerName: string;
-    countryCode?: string; // "NZ"
-    location?: string;
-    remote?: boolean;
-    onsite?: boolean;
-    pharmacy?: boolean;
-    delivery?: boolean;
-    clinic?: boolean;
-    website?: string;
+export interface OrganisationBaseData extends Record<string, unknown> {
+  countryCode?: string; // "NZ"
+  location?: string;
+  remote?: boolean;
+  onsite?: boolean;
+  pharmacy?: boolean;
+  delivery?: boolean;
+  clinic?: boolean;
+  website?: string;
+  associatedBrandingTerms?: string[]; // Eg common names used to refer to the organisation by way of brand
 }
 
+export interface OrganisationData extends OrganisationBaseData {
+  organisationName: string;
+  partnerId?: string;
+  approved?: boolean;
+  approvedAt?: string;
+}
+
+export interface Organisation extends OrganisationData {
+  organisationId: string;
+  createdAt: string;
+  updatedAt: string;
+  approvedByUserId?: string;
+}
+
+export interface PartnerData extends Record<string, unknown> {
+  partnerName: string;
+  countryCode?: string;
+}
+
+export interface AddPartnerData extends PartnerData, OrganisationBaseData {}
+
 export interface Partner extends PartnerData {
-    partnerId: string;
-    accessToken?: string;
-    createdAt: string;
-    updatedAt: string;
-    approved?: boolean;
-    approvedAt?: string;
-    approvedByUserId?: string;
+  partnerId: string;
+  organisationId: string;
+  accessToken?: string;
+  createdAt: string;
+  updatedAt: string;
+  approved?: boolean;
+  approvedAt?: string;
+  approvedByUserId?: string;
 }
 
 export type MetaRecord = Record<string, unknown>;

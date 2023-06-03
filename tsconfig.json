@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "esnext",
     "lib": ["es2018", "esnext", "dom"],
-    "types": ["jest", "node" ],
+    "types": ["jest", "node"],
     "esModuleInterop": true,
     "target": "esnext",
     "noImplicitAny": true,
@@ -12,12 +12,9 @@
     "sourceMap": true,
     "outDir": "esnext",
     "baseUrl": "./src",
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "createFragment",
+    "jsx": "react-jsx",
     "allowJs": true,
-    "paths": {
-    }
+    "paths": {}
   },
   "include": ["src/**/*"],
   "typeRoots": ["./node_modules/@types", "src/types"],

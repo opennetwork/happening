@@ -1,72 +1,113 @@
 import fastify from "fastify";
-import {routes} from "./routes";
-import {setupSwagger} from "./swagger";
+import { routes } from "./routes";
+import { setupSwagger } from "./swagger";
 import blippPlugin from "fastify-blipp";
 import corsPlugin from "@fastify/cors";
-import {getPort} from "./config";
-import {fastifyRequestContext} from "@fastify/request-context";
+import { getPort } from "./config";
+import { fastifyRequestContext } from "@fastify/request-context";
 import helmet from "@fastify/helmet";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { bearerAuthentication } from "./authentication";
 import bearerAuthPlugin from "@fastify/bearer-auth";
 import authPlugin from "@fastify/auth";
-import {seed, stopData} from "../data";
+import { autoSeed, seed, stopData } from "../data";
 import {commitAt, commitShort, packageIdentifier} from "../package";
+import cookie from "@fastify/cookie";
+import { isLike, ok } from "../is";
+import multipart from "@fastify/multipart";
+import formbody from "@fastify/formbody";
+import qs from "qs";
+import { REACT_CLIENT_DIRECTORY } from "../view";
+import files from "@fastify/static";
+import { errorHandler } from "../view/error";
+import etag from "@fastify/etag";
+import { parseStringFields } from "./body-parser";
 
 const { pathname } = new URL(import.meta.url);
-const directory = dirname(pathname)
+const directory = dirname(pathname);
 
 export async function create() {
+    const { COOKIE_SECRET, PUBLIC_PATH } = process.env;
+
+    ok(COOKIE_SECRET, "Expected COOKIE_SECRET");
 
     const app = fastify({
-        logger: true
+        logger: true,
     });
 
     const register: (...args: unknown[]) => void = app.register.bind(fastify);
 
+    register(cookie, {
+        secret: COOKIE_SECRET,
+        hook: "onRequest",
+        parseOptions: {},
+    });
+
+    register(multipart);
+    register(formbody, {
+        parser: parseStringFields,
+    });
+
     register(helmet, { contentSecurityPolicy: false });
 
-    app.addHook(
-        "preValidation",
-        async (request, response) => {
-            if (request.headers.apikey && !request.headers.authorization) {
-                request.headers.authorization = `bearer ${request.headers.apikey}`
-            }
-        }
-    )
-
-    register(fastifyRequestContext, {
-        hook: 'preValidation',
-        defaultStoreValues: {
-
+    app.addHook("preValidation", async (request, response) => {
+        if (request.headers.apikey && !request.headers.authorization) {
+            request.headers.authorization = `bearer ${request.headers.apikey}`;
         }
     });
 
-    app.addHook(
-        "preValidation",
-        async (request, response) => {
-            request.requestContext.set("origin", `${request.protocol}://${request.hostname}`);
+    register(fastifyRequestContext, {
+        hook: "preValidation",
+        defaultStoreValues: {},
+    });
 
-            response.header("X-Powered-By", packageIdentifier);
+    app.addHook("preValidation", async (request, response) => {
+        request.requestContext.set(
+            "origin",
+            `${request.protocol}://${request.hostname}`
+        );
 
-            // Some details about time since commit
-            response.header("X-Source-Commit", commitShort);
-            response.header("X-Source-Commit-At", commitAt);
-        }
-    )
+        response.header("X-Powered-By", packageIdentifier);
+
+        // Some details about time since commit
+        response.header("X-Source-Commit", commitShort);
+        response.header("X-Source-Commit-At", commitAt);
+    });
+
+    register(authPlugin);
+    register(bearerAuthPlugin, {
+        keys: new Set<string>(),
+        auth: bearerAuthentication,
+        addHook: false,
+    });
+    app.setErrorHandler(errorHandler);
 
     register(blippPlugin);
     register(corsPlugin);
 
-    await setupSwagger(app);
+    app.register(
+        async (instance) => {
+            instance.register(etag);
+            instance.addHook("onRequest", (request, response, done) => {
+                response.header("Cache-Control", "max-age=1800"); // Give it something
+                done();
+            });
+            instance.register(files, {
+                root: REACT_CLIENT_DIRECTORY,
+                prefix: "/client",
+            });
+            const publicPath = PUBLIC_PATH || join(directory, "../../public");
+            instance.register(files, {
+                root: publicPath,
+                decorateReply: false,
+                prefix: "/public",
+            });
+        },
+        { prefix: "/" }
+    );
 
-    register(authPlugin)
-    register(bearerAuthPlugin, {
-        keys: new Set<string>(),
-        auth: bearerAuthentication,
-        addHook: false
-    });
+    await setupSwagger(app);
 
     register(routes);
 
@@ -74,13 +115,10 @@ export async function create() {
 }
 
 export async function start() {
-
     const app = await create();
 
     // Before we start, we should seed
-    if (process.env.ENABLE_SEED) {
-        await seed();
-    }
+    await autoSeed();
 
     const port = getPort();
 
@@ -92,5 +130,5 @@ export async function start() {
         await app.close();
         // close any opened connections
         await stopData();
-    }
+    };
 }
