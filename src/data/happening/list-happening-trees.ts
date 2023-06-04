@@ -1,10 +1,13 @@
-import {getHappeningStore} from "./store";
 import {createGetHappeningTreeContext, getHappeningTree} from "./get-happening-tree";
-import {listHappenings} from "./list-happenings";
+import {ListHappeningInput, listHappenings} from "./list-happenings";
 import {getAttendee} from "../attendee";
 
-export async function listHappeningTrees() {
-    const happenings = await listHappenings();
+export interface ListHappeningTreesInput extends ListHappeningInput {
+
+}
+
+export async function listHappeningTrees(options?: ListHappeningTreesInput) {
+    const happenings = await listHappenings(options);
     const attendeeIds = [...new Set(happenings.flatMap(happening => happening.attendees))];
     const attendees = await Promise.all(attendeeIds.map(getAttendee));
     const context = createGetHappeningTreeContext(happenings, attendees);
