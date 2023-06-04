@@ -18,6 +18,7 @@ export function errorHandler(
   const isFragment = pathname.endsWith("/fragment");
   const anonymous = isAnonymous();
   const user = getMaybeUser();
+  const { DEFAULT_TIMEZONE = "Pacific/Auckland" } = process.env;
 
   const html = renderToStaticMarkup(
     <HappeningServer
@@ -28,6 +29,7 @@ export function errorHandler(
       organisations={[]}
       partners={[]}
       user={user}
+      timezone={DEFAULT_TIMEZONE}
     />
   );
 

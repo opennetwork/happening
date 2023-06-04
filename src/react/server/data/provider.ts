@@ -11,10 +11,12 @@ const TRUSTED_ROLE: AuthenticationRole[] = ["moderator", "admin", "developer"];
 
 export interface Data {
   body?: unknown;
+  input?: unknown;
   result?: unknown;
   error?: unknown;
   query?: unknown;
   submitted?: true;
+  timezone: string;
   url: string;
   isAnonymous: boolean;
   isFragment: boolean;
@@ -79,9 +81,22 @@ export function useMaybeResult<R>(): R | undefined {
 }
 
 export function useResult<R>(): R {
-  const result = useMaybeBody<R>();
+  const result = useMaybeResult<R>();
   ok(result, "Expected result");
   return result;
+}
+
+export function useMaybeInput<I>(): I | undefined {
+  const { input } = useData();
+  if (!input) return undefined;
+  ok<I>(input);
+  return input;
+}
+
+export function useInput<I>(): I {
+  const input = useMaybeInput<I>();
+  ok(input, "Expected input");
+  return input;
 }
 
 export function useError(): unknown | undefined {
@@ -144,4 +159,9 @@ export function useIsModerator() {
 
 export function useIsAdmin() {
   return useIsRole("admin");
+}
+
+export function useTimezone() {
+  const { timezone } = useData();
+  return timezone;
 }

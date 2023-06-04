@@ -42,7 +42,7 @@ const DIRECTORY = dirname(pathname);
 export const REACT_CLIENT_DIRECTORY = join(DIRECTORY, "../react/client");
 
 export async function viewRoutes(fastify: FastifyInstance) {
-  const { ALLOW_ANONYMOUS_VIEWS, ENABLE_CACHE } = process.env;
+  const { ALLOW_ANONYMOUS_VIEWS, ENABLE_CACHE, DEFAULT_TIMEZONE = "Pacific/Auckland" } = process.env;
 
   fastify.get("/server.css", async (request, response) => {
     response.header("Content-Type", "text/css");
@@ -61,8 +61,9 @@ export async function viewRoutes(fastify: FastifyInstance) {
       request: FastifyRequest,
       response: FastifyReply
     ) {
+      let baseResult: unknown = undefined;
       if (baseHandler) {
-        await baseHandler(request, response);
+        baseResult = await baseHandler(request, response);
         if (response.sent) return;
       }
 
@@ -118,6 +119,7 @@ export async function viewRoutes(fastify: FastifyInstance) {
         let html = renderToStaticMarkup(
           <HappeningServer
             {...options}
+            input={baseResult}
             url={path}
             isAnonymous={anonymous}
             isFragment={isFragment}
@@ -131,6 +133,7 @@ export async function viewRoutes(fastify: FastifyInstance) {
             query={request.query}
             body={request.body}
             user={user}
+            timezone={DEFAULT_TIMEZONE}
           />
         );
 

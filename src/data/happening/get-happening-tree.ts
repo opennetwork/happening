@@ -15,10 +15,10 @@ export function createGetHappeningTreeContext(happenings?: Happening[], attendee
     return {
         trees: new Map(),
         store: happenings ?
-            new Map(happenings.map(value => [value.happeningId, value])) :
+            new Map(happenings.filter(Boolean).map(value => [value.happeningId, value])) :
             undefined,
         attendees: attendees ?
-            new Map(attendees.map(value => [value.attendeeId, value])) :
+            new Map(attendees.filter(Boolean).map(value => [value.attendeeId, value])) :
             new Map(),
         partners: new Map()
     };
@@ -75,7 +75,8 @@ export async function getHappeningTree(happeningId: string, context = createGetH
                     attendee => getCachedAttendee(attendee)
                 )
             )
-        );
+        )
+            .filter(Boolean)
     }
 
     // When getting the children trees, they will reference the parent using the above
@@ -103,7 +104,7 @@ export async function getHappeningTree(happeningId: string, context = createGetH
         const existing = context.attendees.get(attendeeId);
         if (existing) return existing;
         const value = await getAttendee(attendeeId);
-        ok(value, `Expected to find attendee ${attendeeId}`);
+        if (!value) return undefined;
         context.attendees.set(attendeeId, value);
         return value;
     }
@@ -112,7 +113,7 @@ export async function getHappeningTree(happeningId: string, context = createGetH
         const existing = context.partners.get(partnerId);
         if (existing) return existing;
         const value = await getPartner(partnerId);
-        ok(value, `Expected to find partner ${partnerId}`);
+        if (!value) return undefined;
         context.partners.set(partnerId, value);
         return value;
     }

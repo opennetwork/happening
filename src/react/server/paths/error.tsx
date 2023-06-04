@@ -2,6 +2,7 @@ import { useError } from "../data";
 
 export function Errors() {
   const error = useError();
+  console.error(error);
   return (
     <>
       <h2>Ran into an error!</h2>
