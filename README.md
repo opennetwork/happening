@@ -13,7 +13,7 @@ deleting the `"private": true,` line to enable publishing
 
 ### Test Coverage
 
- ![82.03%25 lines covered](https://img.shields.io/badge/lines-82.03%25-brightgreen) ![82.03%25 statements covered](https://img.shields.io/badge/statements-82.03%25-brightgreen) ![71.52%25 functions covered](https://img.shields.io/badge/functions-71.52%25-yellow) ![83.17%25 branches covered](https://img.shields.io/badge/branches-83.17%25-brightgreen)
+
 
 [//]: # (badges)
 

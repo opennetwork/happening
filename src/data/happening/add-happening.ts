@@ -1,9 +1,10 @@
-import {Happening, HappeningData, HappeningTreeData, PartialHappening} from "./types";
+import {HappeningData, HappeningTreeData, PartialHappening} from "./types";
 import {setHappening} from "./set-happening";
 import {v4} from "uuid";
 import {createGetHappeningTreeContext, getHappeningTree} from "./get-happening-tree";
 import {attr} from "cheerio/lib/api/attributes";
 import {Attendee, AttendeeData, setAttendee} from "../attendee";
+import {getHappening} from "./get-happening";
 
 export async function addHappening(data: HappeningData) {
    return setHappening(data);
@@ -48,8 +49,18 @@ export async function addHappeningTree(data: HappeningTreeData) {
    function createHappenings(tree: HappeningTreeData, parent?: string): PartialHappening[] {
       const { children, attendees, ...data } = tree;
       const happeningId = v4();
+      const EXISTING_TYPE = "existing-happening-ignore-for-db";
       const nextPartial: PartialHappening[] = children?.length ?
-          children.flatMap(child => createHappenings(child, happeningId)) :
+          children.flatMap<PartialHappening>(child => {
+              if (typeof child === "string") {
+                  return {
+                      type: EXISTING_TYPE,
+                      parent: happeningId,
+                      happeningId: child
+                  }
+              }
+              return createHappenings(child, happeningId)
+          }) :
           [];
 
       const partial: PartialHappening = {
@@ -71,7 +82,7 @@ export async function addHappeningTree(data: HappeningTreeData) {
 
       return [
          partial,
-         ...nextPartial
+         ...nextPartial.filter(value => value.type !== EXISTING_TYPE)
       ];
    }
 

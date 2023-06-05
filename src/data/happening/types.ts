@@ -1,5 +1,6 @@
 import {Attendee, AttendeeData} from "../attendee";
 import {Partner} from "../partner";
+import {User} from "../user";
 
 export type HappeningType = (
     | "event"
@@ -16,8 +17,9 @@ export type HappeningType = (
 );
 
 export interface HappeningTreeData extends HappeningEventData {
+    type?: HappeningType | string;
     attendees?: (string | AttendeeData)[]
-    children?: HappeningTreeData[]
+    children?: (string | HappeningTreeData)[]
 }
 
 export interface HappeningOptionData extends Record<string, unknown> {
@@ -39,6 +41,7 @@ export interface HappeningEventData extends Record<string, unknown> {
 }
 
 export interface HappeningData extends HappeningEventData {
+    type?: HappeningType | string;
     parent?: string
     children?: string[];
     attendees?: string[];
@@ -46,9 +49,10 @@ export interface HappeningData extends HappeningEventData {
 }
 
 export interface Happening extends HappeningData {
-    happeningId: string;
     type: HappeningType | string;
+    happeningId: string;
     partnerId?: string;
+    userId?: string;
 }
 
 export type PartialHappening = HappeningData & Partial<Happening>
@@ -61,4 +65,5 @@ export interface HappeningTree extends HappeningEventData {
     attendees: Attendee[];
     partnerId?: string;
     partner?: Partner;
+    userId?: string;
 }
