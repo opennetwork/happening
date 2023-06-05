@@ -6,7 +6,8 @@ export type AuthenticationStateType =
   | "reddit"
   | "cookie"
   | "authsignal"
-  | "partner";
+  | "partner"
+  | "attendee";
 
 export interface AuthenticationStateFromData {
   type: AuthenticationStateType | string;

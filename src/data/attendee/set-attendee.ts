@@ -3,10 +3,25 @@ import {Attendee, PartialAttendee} from "./types";
 import {createHash} from "crypto";
 import {getAttendee} from "./get-attendee";
 import {entries} from "../entries";
+import {getMaybePartner, getMaybeUser, isAnonymous} from "../../authentication";
+import {v4} from "uuid";
+import {ok} from "../../is";
 
 function getPartitionPrefix() {
-    // TODO
-    return "partition::";
+    const partner = getMaybePartner();
+    // If authenticated, attendee information will be retained across happenings
+    if (partner?.partnerId) {
+        return `partner:${partner.partnerId}:`
+    }
+    const user = getMaybeUser();
+    if (user?.userId) {
+        // Users can create their own attendees
+        return `user:${user.userId}:`
+    }
+    ok(isAnonymous(), "Expected user or partner if not anonymous");
+    // Random every time if no authentication :)
+    // If creating a happening tree, each new tree request will have a new set of attendees
+    return v4();
 }
 
 /**

@@ -4,8 +4,9 @@ import {
   Organisation,
   User,
 } from "../../../data";
-import { createContext, useContext, useMemo } from "react";
+import {createContext, PropsWithChildren, ProviderProps, useContext, useMemo} from "react";
 import { ok } from "../../../is";
+import { TimezoneProvider } from "../../client/components/happening";
 
 const TRUSTED_ROLE: AuthenticationRole[] = ["moderator", "admin", "developer"];
 
@@ -27,7 +28,16 @@ export interface Data {
 }
 
 export const DataContext = createContext<Data | undefined>(undefined);
-export const DataProvider = DataContext.Provider;
+
+export function DataProvider({ children, ...props }: ProviderProps<Data>) {
+  return (
+      <DataContext.Provider {...props}>
+        <TimezoneProvider value={props.value.timezone}>
+          {children}
+        </TimezoneProvider>
+      </DataContext.Provider>
+  )
+}
 
 export function useData(): Data {
   const context = useContext(DataContext);

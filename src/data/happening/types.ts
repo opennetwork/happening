@@ -42,6 +42,7 @@ export interface HappeningData extends HappeningEventData {
     parent?: string
     children?: string[];
     attendees?: string[];
+    timezone?: string;
 }
 
 export interface Happening extends HappeningData {

@@ -109,6 +109,8 @@ export interface FormMetaData extends Record<string, unknown> {}
 
 export interface FormMeta extends FormMetaData {
   formMetaId: string;
+  userId?: string;
+  partnerId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,6 +156,7 @@ export interface HappeningData extends HappeningEventData {
     parent?: string
     children?: string[];
     attendees?: string[];
+    timezone?: string;
 }
 
 export interface Happening extends HappeningData {

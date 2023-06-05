@@ -9,6 +9,7 @@ import { Logout, handler as logoutHandler } from "./logout";
 import { Errors } from "./error";
 import { HappeningPage, handler as happeningHandler } from "./happening";
 import { HappeningsPage, handler as happeningsHandler } from "./happenings";
+import { CreateHappeningPage, submit as createHappeningSubmit } from "./create-happening";
 
 export const paths: Record<string, FunctionComponent> = {
   "/": Home,
@@ -21,6 +22,7 @@ export const paths: Record<string, FunctionComponent> = {
   "/logout": Logout,
   "/error": Errors,
   "/happenings": HappeningsPage,
+  "/happening/create": CreateHappeningPage,
   "/happening/:happeningId": HappeningPage
 };
 
@@ -31,6 +33,7 @@ export const pathsAnonymous: Record<string, boolean> = {
   "/calculator": true,
   "/login": true,
   "/happenings": true,
+  "/happening/create": true,
   "/happening/:happeningId": true
 };
 
@@ -39,6 +42,7 @@ export const pathsSubmit: Record<
   (...args: unknown[]) => Promise<unknown | void> | unknown | void
 > = {
   "/feedback": feedbackSubmit,
+  "/happening/create": createHappeningSubmit,
 };
 
 export const pathsHandler: Record<

@@ -18,16 +18,18 @@ export async function handler(request: FastifyRequest<Schema>) {
 
 export function HappeningsPage() {
   const result = useInput<HappeningTree[]>();
-  const timezone = useTimezone();
   return (
-      <div className="flex flex-col divide-y">
-        {result.map(
-            (result, index) => (
-                <a href={`/happening/${result.happeningId}`} key={index}>
-                  <Happening happening={result} timezone={timezone} />
-                </a>
-            )
-        )}
+      <div className="flex flex-col">
+        <a href="/happening/create">Create Happening</a>
+        <div className="flex flex-col divide-y">
+          {result.map(
+              (result, index) => (
+                  <a href={`/happening/${result.happeningId}`} key={index}>
+                    <Happening happening={result} />
+                  </a>
+              )
+          )}
+        </div>
       </div>
   )
 }

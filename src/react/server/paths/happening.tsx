@@ -16,6 +16,5 @@ export async function handler(request: FastifyRequest<Schema>) {
 
 export function HappeningPage() {
   const result = useInput<HappeningTree>();
-  const timezone = useTimezone();
-  return <Happening happening={result} timezone={timezone} />
+  return <Happening happening={result} />
 }
