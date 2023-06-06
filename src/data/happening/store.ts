@@ -3,6 +3,6 @@ import {Happening} from "./types";
 
 const STORE_NAME = "happening" as const;
 
-export function getHappeningStore() {
-    return getKeyValueStore<Happening>(STORE_NAME);
+export function getHappeningStore<H extends Happening>(name = STORE_NAME) {
+    return getKeyValueStore<H>(name);
 }
